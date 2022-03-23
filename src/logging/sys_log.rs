@@ -4,23 +4,46 @@ use chrono::DateTime;
 use std::time::SystemTime;
 use crate::logging::log_flags::LogFlags;
 use ansi_term::Colour;
+use lazy_static::lazy_static;
+use std::sync::{Mutex};
 
+lazy_static! {
+    pub static ref LOG_SINGLETON: Mutex<Option<Log>> = Mutex::new(None);
+}
 
+#[derive(Copy, Clone)]
 pub struct Log {
     output_path: &'static str,
     flags: LogFlags,
-    messages: Vec<String>,
+    // messages: Vec<String>,
 
 }
 
 impl Log {
-    pub fn init() -> Log {
-        let mut log = Log {
-            output_path: "",
-            flags: LogFlags::WRITE_ERROR | LogFlags::WRITE_WARNING | LogFlags::WRITE_MESSAGE | LogFlags::WRITE_TO_CONSOLE,
-            messages: vec![],
-        };
-        log
+    pub fn init() {
+
+        let mut st = LOG_SINGLETON.lock().unwrap();
+        if st.is_none() {
+            let log = Log {
+                output_path: "",
+                flags: LogFlags::WRITE_ERROR | LogFlags::WRITE_WARNING | LogFlags::WRITE_MESSAGE | LogFlags::WRITE_TO_CONSOLE,
+                // messages: vec![],
+            };
+            *st = Some(log);
+        }
+        else{
+            panic!("The logger is already instantiated! A singleton can be only instantiated once!");
+        }
+    }
+
+    pub fn get() -> Log{
+        if LOG_SINGLETON.lock().unwrap().is_some(){
+            let log = LOG_SINGLETON.lock().unwrap().unwrap();
+            log
+        }
+        else {
+            panic!("The logger has not been initialized yet! Init first before you use it.")
+        }
     }
 
     pub fn write(&mut self, message: &'static str) {
@@ -31,7 +54,7 @@ impl Log {
 
         let prefix = "MSG";
         let output = self.build_output(prefix, message);
-        self.messages.push(output.to_string());
+        // self.messages.push(output.to_string());
 
         if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
             return;
@@ -47,7 +70,7 @@ impl Log {
 
         let prefix = "WARN";
         let output = self.build_output(prefix, warning);
-        self.messages.push(output.to_string());
+        // self.messages.push(output.to_string());
 
         if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
             return;
@@ -63,7 +86,7 @@ impl Log {
 
         let prefix = "ERR";
         let output = self.build_output(prefix, error);
-        self.messages.push(output.to_string());
+        // self.messages.push(output.to_string());
 
         if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
             return;
