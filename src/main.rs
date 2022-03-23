@@ -8,4 +8,5 @@ fn main() {
 
     let mut logger = logging::sys_log::Log::init();
     logger.write("This is a Log message!");
+    logger.write_warning("This is a warning!")
 }

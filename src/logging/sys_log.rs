@@ -1,6 +1,4 @@
 extern crate chrono;
-
-
 use chrono::offset::Utc;
 use chrono::DateTime;
 use std::time::SystemTime;
@@ -30,8 +28,8 @@ impl Log {
             return;
         }
 
-        let timestamp = Log::get_time().to_owned();
-        let output = timestamp + ": " + message;
+        let prefix = "MSG";
+        let output = self.build_output(prefix, message);
         self.messages.push(output.to_string());
 
         if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
@@ -40,10 +38,32 @@ impl Log {
         println!("{}",  output);
     }
 
-    fn get_time() -> String {
+    pub fn write_warning(&mut self, warning: &'static str){
+
+        if !self.flags.contains(LogFlags::WRITE_WARNING){
+            return;
+        }
+
+        let prefix = "WARN";
+        let output = self.build_output(prefix, warning);
+        self.messages.push(output.to_string());
+
+        if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
+            return;
+        }
+        println!("\x1b[93m{}\x1b[0m", output);
+    }
+
+    fn build_output(&self, prefix: &'static str, message: &'static str) -> String{
+        let timestamp = self.get_time().to_owned();
+        let output = "[".to_owned() + &timestamp + "] " +  prefix + ": " + message;
+        output
+    }
+
+    fn get_time(&self) -> String {
         let now = SystemTime::now();
         let datetime: DateTime<Utc> = now.into();
-        let datetime_str = datetime.format("%d/%m/%Y %T").to_string();
+        let datetime_str = datetime.format("%T").to_string();
         datetime_str
     }
 }
