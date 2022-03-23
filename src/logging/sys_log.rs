@@ -3,6 +3,7 @@ use chrono::offset::Utc;
 use chrono::DateTime;
 use std::time::SystemTime;
 use crate::logging::log_flags::LogFlags;
+use ansi_term::Colour;
 
 
 pub struct Log {
@@ -51,7 +52,23 @@ impl Log {
         if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
             return;
         }
-        println!("\x1b[93m{}\x1b[0m", output);
+        println!("{}", Colour::Yellow.bold().paint(output));
+    }
+
+    pub fn write_error(&mut self, error: &'static str){
+
+        if !self.flags.contains(LogFlags::WRITE_WARNING){
+            return;
+        }
+
+        let prefix = "ERR";
+        let output = self.build_output(prefix, error);
+        self.messages.push(output.to_string());
+
+        if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
+            return;
+        }
+        println!("{}", Colour::Red.bold().paint(output));
     }
 
     fn build_output(&self, prefix: &'static str, message: &'static str) -> String{
