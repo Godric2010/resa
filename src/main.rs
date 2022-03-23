@@ -1,8 +1,11 @@
+#[macro_use]
+extern crate bitflags;
+
 mod logging;
 
 fn main() {
     println!("Hello, world!");
 
-    logging::sys_log::log::init();
-    logging::sys_log::log::write("This is a log message!");
+    let mut logger = logging::sys_log::Log::init();
+    logger.write("This is a Log message!");
 }
