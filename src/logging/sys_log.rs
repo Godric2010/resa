@@ -15,8 +15,6 @@ lazy_static! {
 pub struct Log {
     output_path: &'static str,
     flags: LogFlags,
-    // messages: Vec<String>,
-
 }
 
 impl Log {
@@ -27,7 +25,6 @@ impl Log {
             let log = Log {
                 output_path: "",
                 flags: LogFlags::WRITE_ERROR | LogFlags::WRITE_WARNING | LogFlags::WRITE_MESSAGE | LogFlags::WRITE_TO_CONSOLE,
-                // messages: vec![],
             };
             *st = Some(log);
         }
@@ -54,7 +51,6 @@ impl Log {
 
         let prefix = "MSG";
         let output = self.build_output(prefix, message);
-        // self.messages.push(output.to_string());
 
         if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
             return;
@@ -70,7 +66,6 @@ impl Log {
 
         let prefix = "WARN";
         let output = self.build_output(prefix, warning);
-        // self.messages.push(output.to_string());
 
         if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
             return;
@@ -86,7 +81,6 @@ impl Log {
 
         let prefix = "ERR";
         let output = self.build_output(prefix, error);
-        // self.messages.push(output.to_string());
 
         if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
             return;
