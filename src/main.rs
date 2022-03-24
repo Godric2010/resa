@@ -2,8 +2,6 @@
 extern crate bitflags;
 extern crate core;
 
-use std::ops::DerefMut;
-
 mod logging;
 
 fn main() {

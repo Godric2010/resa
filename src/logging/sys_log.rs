@@ -1,11 +1,13 @@
 extern crate chrono;
 use chrono::offset::Utc;
-use chrono::DateTime;
+use chrono::{DateTime, Local};
 use std::time::SystemTime;
 use crate::logging::log_flags::LogFlags;
 use ansi_term::Colour;
 use lazy_static::lazy_static;
 use std::sync::{Mutex};
+use std::fs::{File, OpenOptions};
+use std::io::{Write, BufReader, BufRead, Error};
 
 lazy_static! {
     pub static ref LOG_SINGLETON: Mutex<Option<Log>> = Mutex::new(None);
@@ -20,10 +22,12 @@ pub struct Log {
 impl Log {
     pub fn init() {
 
+        let log_path = "./Log.md";
+
         let mut st = LOG_SINGLETON.lock().unwrap();
         if st.is_none() {
             let log = Log {
-                output_path: "",
+                output_path: log_path,
                 flags: LogFlags::WRITE_ERROR | LogFlags::WRITE_WARNING | LogFlags::WRITE_MESSAGE | LogFlags::WRITE_TO_CONSOLE,
             };
             *st = Some(log);
@@ -31,6 +35,9 @@ impl Log {
         else{
             panic!("The logger is already instantiated! A singleton can be only instantiated once!");
         }
+
+        Log::create_logfile(log_path);
+
     }
 
     pub fn get() -> Log{
@@ -52,6 +59,8 @@ impl Log {
         let prefix = "MSG";
         let output = self.build_output(prefix, message);
 
+        self.write_to_file(&output);
+
         if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
             return;
         }
@@ -66,6 +75,8 @@ impl Log {
 
         let prefix = "WARN";
         let output = self.build_output(prefix, warning);
+
+        self.write_to_file(&output);
 
         if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
             return;
@@ -82,6 +93,8 @@ impl Log {
         let prefix = "ERR";
         let output = self.build_output(prefix, error);
 
+        self.write_to_file(&output);
+
         if !self.flags.contains(LogFlags::WRITE_TO_CONSOLE){
             return;
         }
@@ -96,9 +109,24 @@ impl Log {
 
     fn get_time(&self) -> String {
         let now = SystemTime::now();
-        let datetime: DateTime<Utc> = now.into();
+        let datetime: DateTime<Local> = now.into();
         let datetime_str = datetime.format("%T").to_string();
         datetime_str
+    }
+
+    fn create_logfile(path: &'static str) -> Result<(),Error>{
+        let mut output = File::create(path)?;
+        writeln!(output, "#RESA Logfile\n\n")?;
+        Ok(())
+    }
+
+    fn write_to_file(&self, line: &String) {
+        let mut file = OpenOptions::new().write(true).append(true).open(self.output_path).unwrap();
+
+        if let Err(e) = writeln!(file, "{}",line) {
+            eprintln!("Could not write to file: {}", e);
+        }
+
     }
 }
 
