@@ -103,7 +103,7 @@ impl Log {
 
     fn build_output(&self, prefix: &'static str, message: &'static str) -> String {
         let timestamp = self.get_time().to_owned();
-        let output = "[".to_owned() + &timestamp + "] " + prefix + ": " + message;
+        let output = "[".to_owned() + &timestamp + "] " + prefix + ": " + message + "\n";
         output
     }
 
@@ -116,14 +116,14 @@ impl Log {
 
     fn create_logfile(path: &'static str) -> Result<(), Error> {
         let mut output = File::create(path)?;
-        writeln!(output, "#RESA Logfile\n\n")?;
+        writeln!(output, "# RESA Logfile\n\n")?;
         Ok(())
     }
 
     fn write_to_file(&self, line: &String) {
         let mut file = OpenOptions::new().write(true).append(true).open(self.output_path).unwrap();
 
-        if let Err(e) = writeln!(file, "{}", line) {
+        if let Err(e) = write!(file, "{}", line) {
             eprintln!("Could not write to file: {}", e);
         }
     }
