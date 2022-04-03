@@ -1,6 +1,5 @@
 extern crate chrono;
 
-use chrono::offset::Utc;
 use chrono::{DateTime, Local};
 use std::time::SystemTime;
 use crate::logging::log_flags::LogFlags;
@@ -8,7 +7,7 @@ use ansi_term::Colour;
 use lazy_static::lazy_static;
 use std::sync::{Mutex};
 use std::fs::{File, OpenOptions};
-use std::io::{Write, BufReader, BufRead, Error};
+use std::io::{Write, Error};
 
 lazy_static! {
     pub static ref LOG_SINGLETON: Mutex<Option<Log>> = Mutex::new(None);
@@ -41,7 +40,9 @@ impl Log {
             panic!("The logger is already instantiated! A singleton can be only instantiated once!");
         }
 
-        Log::create_logfile(log_path);
+        let result = Log::create_logfile(log_path);
+        assert!(result.is_ok())
+
     }
 
     pub fn get() -> Log {
@@ -53,7 +54,7 @@ impl Log {
         }
     }
 
-    pub fn write(&mut self, message: &'static str) {
+    pub fn write(&mut self, message: &str) {
         if !self.flags.contains(LogFlags::WRITE_MESSAGE) {
             return;
         }
@@ -69,7 +70,7 @@ impl Log {
         println!("{}", output);
     }
 
-    pub fn write_warning(&mut self, warning: &'static str) {
+    pub fn write_warning(&mut self, warning: &str) {
         if !self.flags.contains(LogFlags::WRITE_WARNING) {
             return;
         }
@@ -85,7 +86,7 @@ impl Log {
         println!("{}", Colour::Yellow.bold().paint(output));
     }
 
-    pub fn write_error(&mut self, error: &'static str) {
+    pub fn write_error(&mut self, error: &str) {
         if !self.flags.contains(LogFlags::WRITE_WARNING) {
             return;
         }
@@ -101,7 +102,7 @@ impl Log {
         println!("{}", Colour::Red.bold().paint(output));
     }
 
-    fn build_output(&self, prefix: &'static str, message: &'static str) -> String {
+    fn build_output(&self, prefix: &'static str, message: &str) -> String {
         let timestamp = self.get_time().to_owned();
         let output = "[".to_owned() + &timestamp + "] " + prefix + ": " + message + "\n";
         output
