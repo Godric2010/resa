@@ -2,7 +2,7 @@ extern crate chrono;
 
 use chrono::{DateTime, Local};
 use std::time::SystemTime;
-use crate::logging::log_flags::LogFlags;
+use crate::system::log_flags::LogFlags;
 use ansi_term::Colour;
 use lazy_static::lazy_static;
 use std::sync::{Mutex};

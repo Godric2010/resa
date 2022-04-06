@@ -2,7 +2,7 @@ extern crate sysinfo;
 
 use num_format::{Buffer, CustomFormat, Grouping, Locale, ToFormattedString};
 use sysinfo::{DiskExt, ProcessorExt, System, SystemExt};
-use crate::logging::sys_log::Log;
+use crate::system::log::Log;
 
 
 pub struct DeviceInfo {
