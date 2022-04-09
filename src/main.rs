@@ -2,7 +2,6 @@
 extern crate bitflags;
 extern crate core;
 
-use std::borrow::BorrowMut;
 use directories::UserDirs;
 mod system;
 use crate::system::layer::System;
@@ -17,15 +16,4 @@ fn main() {
     System::init_logging(&desktop);
 
     system.window.start_window_loop();
-
-    // system::log::Log::init(&desktop);
-    //
-    // let mut device_infos = DeviceInfo::new();
-    // device_infos.collect_data();
-    // device_infos.write_to_log();
-    //
-    // let mut logger = system::log::Log::get();
-    // logger.write("This is a Log message!");
-    // logger.write_warning("This is a warning!");
-    // logger.write_error("This is an error!");
 }

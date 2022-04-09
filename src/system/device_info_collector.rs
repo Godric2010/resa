@@ -1,6 +1,6 @@
 extern crate sysinfo;
 
-use num_format::{Buffer, CustomFormat, Grouping, Locale, ToFormattedString};
+use num_format::{Buffer, CustomFormat, Grouping};
 use sysinfo::{DiskExt, ProcessorExt, System, SystemExt};
 use crate::system::log::Log;
 

@@ -1,7 +1,6 @@
 extern crate glfw;
 
 use glfw::{Action, Context, Key};
-use num_format::Locale::se;
 
 pub struct Window{
     width: u32,
