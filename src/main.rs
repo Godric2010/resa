@@ -2,6 +2,7 @@
 extern crate bitflags;
 extern crate core;
 
+use std::borrow::BorrowMut;
 use directories::UserDirs;
 mod system;
 use crate::system::layer::System;
@@ -12,8 +13,10 @@ fn main() {
     let user_dirs = UserDirs::new();
     let desktop = user_dirs.unwrap().desktop_dir().unwrap().to_str().unwrap().to_owned();
 
-    System::init();
+    let system = System::init();
     System::init_logging(&desktop);
+
+    system.window.start_window_loop();
 
     // system::log::Log::init(&desktop);
     //

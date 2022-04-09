@@ -1,11 +1,16 @@
 use crate::system::device_info_collector::DeviceInfo;
 use crate::system::log::Log;
+use crate::system::window::Window;
 
-pub struct System {}
+pub struct System {
+    pub window: Window,
+}
 
 impl System {
     pub fn init() -> System {
-        let sys = System {};
+        let sys = System {
+            window: Window::init(),
+        };
 
         sys
     }
