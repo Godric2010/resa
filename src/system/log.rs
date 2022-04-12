@@ -33,7 +33,7 @@ impl Log {
         if st.is_none() {
             let log = Log {
                 output_path: log_path,
-                flags: LogFlags::WRITE_ERROR | LogFlags::WRITE_WARNING | LogFlags::WRITE_MESSAGE | LogFlags::WRITE_TO_CONSOLE,
+                flags: LogFlags::WRITE_ERROR | LogFlags::WRITE_WARNING | LogFlags::WRITE_MESSAGE,
             };
             *st = Some(log);
         } else {
