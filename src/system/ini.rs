@@ -45,7 +45,7 @@ impl Serializable for IniFileData {
 fn string_to_data(content: &str) -> IniFileData {
     let mut ini_data = setup_default_ini();
 
-    let mut split_content = content.split("#");
+    let split_content = content.split("#");
     for ini_type in split_content {
         let mut type_fields = ini_type.split("\n");
         let mut fields_vec: Vec<&str> = type_fields.collect();

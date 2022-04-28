@@ -8,12 +8,12 @@ use crate::system::layer::System;
 
 
 fn main() {
-    println!("Hello, world!");
     let user_dirs = UserDirs::new();
     let desktop = user_dirs.unwrap().desktop_dir().unwrap().to_str().unwrap().to_owned();
 
-    let system = System::init();
+    let mut system = System::init();
     System::init_logging(&desktop);
 
-    system.window.start_window_loop();
+    system.window.build_window();
+    system.window.run_window_loop();
 }

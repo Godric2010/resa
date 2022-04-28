@@ -1,11 +1,11 @@
 use crate::system::device_info_collector::DeviceInfo;
-use crate::system::{file, ini};
+use crate::system::ini;
 use crate::system::file::Serializable;
 use crate::system::log::Log;
-use crate::system::window::Window;
+use crate::system::window::ResaWindow;
 
 pub struct System {
-    pub window: Window,
+    pub window: ResaWindow,
 }
 
 impl System {
@@ -14,7 +14,7 @@ impl System {
         let ini_data = ini::IniFileData::load("settings.ini","");
 
         let sys = System {
-            window: Window::init(&ini_data.window_data),
+            window: ResaWindow::init(&ini_data.window_data),
         };
 
         sys

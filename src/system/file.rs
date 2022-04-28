@@ -1,6 +1,4 @@
-use std::error::Error;
 use std::io::{Read, Write};
-use crate::system::ini::IniFileData;
 
 pub trait Serializable{
     fn save(&self) -> String;
