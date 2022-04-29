@@ -3,6 +3,7 @@ use crate::system::ini::{WindowIniData, WindowMode};
 use winit::{event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::{WindowBuilder, Window}};
 use winit::dpi::{LogicalSize, Size};
 use crate::system::ini::WindowMode::Fullscreen;
+use crate::system::vk_renderer;
 
 pub struct ResaWindow {
     width: u32,
@@ -42,6 +43,8 @@ impl ResaWindow {
             .with_always_on_top(true)
             .with_transparent(false)
             .build(&self.event_loop).unwrap());
+
+        vk_renderer::init();
     }
 
     pub fn run_window_loop(self) {
