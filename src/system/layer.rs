@@ -5,27 +5,31 @@ use crate::system::log::Log;
 use crate::system::window::ResaWindow;
 
 pub struct System {
+    pub deviceInfo: DeviceInfo,
     pub window: ResaWindow,
 }
 
 impl System {
-    pub fn init() -> System {
+    pub fn init(log_output: &str) -> System {
 
         let ini_data = ini::IniFileData::load("settings.ini","");
 
-        let sys = System {
+        let mut sys = System {
+            deviceInfo: DeviceInfo::new(),
             window: ResaWindow::init(&ini_data.window_data),
         };
+
+        Log::init(log_output);
+
+        sys.deviceInfo.collect_data();
+        sys.window.build_window(sys.deviceInfo.os_name);
 
         sys
     }
 
-    pub fn init_logging(output_path: &str) {
+    fn init_logging(self, output_path: &str) {
 
         Log::init(output_path);
-
-        let mut device_infos = DeviceInfo::new();
-        device_infos.collect_data();
-        device_infos.write_to_log();
+        self.deviceInfo.write_to_log();
     }
 }

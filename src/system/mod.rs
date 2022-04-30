@@ -6,4 +6,4 @@ mod device_info_collector;
 mod window;
 mod file;
 mod ini;
-mod vk_renderer;
+mod rendering;

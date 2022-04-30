@@ -47,8 +47,8 @@ fn string_to_data(content: &str) -> IniFileData {
 
     let split_content = content.split("#");
     for ini_type in split_content {
-        let mut type_fields = ini_type.split("\n");
-        let mut fields_vec: Vec<&str> = type_fields.collect();
+        let type_fields = ini_type.split("\n");
+        let fields_vec: Vec<&str> = type_fields.collect();
 
         match fields_vec[0] {
             "Window" => { string_to_window_data(&fields_vec, &mut ini_data) }

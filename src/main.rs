@@ -11,9 +11,8 @@ fn main() {
     let user_dirs = UserDirs::new();
     let desktop = user_dirs.unwrap().desktop_dir().unwrap().to_str().unwrap().to_owned();
 
-    let mut system = System::init();
-    System::init_logging(&desktop);
+    let mut system = System::init(&desktop);
+    // system.init_logging(&desktop);
 
-    system.window.build_window();
     system.window.run_window_loop();
 }

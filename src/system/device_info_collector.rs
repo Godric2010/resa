@@ -4,16 +4,16 @@ use num_format::{Buffer, CustomFormat, Grouping};
 use sysinfo::{DiskExt, ProcessorExt, System, SystemExt};
 use crate::system::log::Log;
 
-
+#[derive(Copy, Clone)]
 pub struct DeviceInfo {
-    os_name: String,
-    os_version: String,
-    cpu_name: String,
+    pub os_name: &'static str,
+    pub os_version: &'static str,
+    cpu_name: &'static str,
     cpu_cores: usize,
     cpu_frequency: u64,
     ram_size: u64,
     storage_left: u64,
-    gpu_vendor: String,
+    gpu_vendor: &'static str,
     gpu_ram: u64,
 }
 
@@ -21,14 +21,14 @@ impl DeviceInfo {
     pub fn new() -> DeviceInfo {
         let instance = DeviceInfo {
             storage_left: 0,
-            gpu_vendor: "Not Initialized".to_string(),
+            gpu_vendor: "Not Initialized",
             gpu_ram: 0,
             ram_size: 0,
             cpu_cores: 0,
-            cpu_name: "Not Initialized".to_string(),
+            cpu_name: "Not Initialized",
             cpu_frequency: 0,
-            os_name: "Not Initialized".to_string(),
-            os_version: "Not Initialized".to_string(),
+            os_name: "Not Initialized",
+            os_version: "Not Initialized",
         };
         instance
     }
@@ -43,7 +43,7 @@ impl DeviceInfo {
         self.get_storage_data(&sys);
     }
 
-    pub fn set_gpu_data(&mut self, vendor: String, g_ram: u64) {
+    pub fn set_gpu_data(&mut self, vendor: &'static str, g_ram: u64) {
         self.gpu_vendor = vendor;
         self.gpu_ram = g_ram;
     }
@@ -51,12 +51,12 @@ impl DeviceInfo {
     pub fn write_to_log(self) {
         let mut log_string = String::new();
         log_string.push_str("\n## System Info\n---\n");
-        log_string.push_str(self.os_name.as_str());
+        log_string.push_str(self.os_name);
         log_string.push_str(" (Version: ");
-        log_string.push_str(self.os_version.as_str());
+        log_string.push_str(self.os_version);
 
         log_string.push_str(")\n### CPU\n\t");
-        log_string.push_str(self.cpu_name.as_str());
+        log_string.push_str(self.cpu_name);
         log_string.push_str("\n\tCores: ");
         log_string.push_str(self.cpu_cores.to_string().as_str());
         log_string.push_str("\n\tFrequency: ");
@@ -69,7 +69,7 @@ impl DeviceInfo {
         log_string.push_str(" (KB)\n");
 
         log_string.push_str("### GPU\n\t");
-        log_string.push_str(self.gpu_vendor.as_str());
+        log_string.push_str(self.gpu_vendor);
         log_string.push_str("\n\tGraphics RAM: ");
         let gpu_ram = self.gpu_ram as usize;
         log_string.push_str(&*DeviceInfo::format_big_num(&gpu_ram));
@@ -85,13 +85,13 @@ impl DeviceInfo {
 
     fn get_operating_system_info(&mut self, sys: &System) {
         let version = sys.os_version().unwrap();
-        self.os_name = sys.name().unwrap();
-        self.os_version = version;
+        self.os_name = DeviceInfo::string_to_static_str(sys.name().unwrap());
+        self.os_version = DeviceInfo::string_to_static_str(version);
     }
 
     fn get_cpu_info(&mut self, sys: &System) {
         let main_cpu = sys.global_processor_info();
-        self.cpu_name = main_cpu.brand().to_string();
+        self.cpu_name = DeviceInfo::string_to_static_str(main_cpu.brand().to_string());
         self.cpu_frequency = main_cpu.frequency();
         self.cpu_cores = sys.physical_core_count().unwrap();
     }
@@ -119,5 +119,9 @@ impl DeviceInfo {
 
         let num_string = buf.as_str().to_string();
         num_string
+    }
+
+    fn string_to_static_str(s: String) -> &'static str {
+        Box::leak(s.into_boxed_str())
     }
 }
