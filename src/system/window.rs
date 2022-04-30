@@ -1,6 +1,7 @@
 use crate::system::ini::{WindowIniData, WindowMode};
 use winit::{event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::{WindowBuilder, Window}};
 use winit::dpi::{LogicalSize};
+use crate::system::rendering::metal_renderer::MetalRenderer;
 use crate::system::rendering::renderer::{NullTrait, Renderer};
 use crate::system::rendering::vk_renderer;
 use crate::system::rendering::vk_renderer::VkRenderer;
@@ -48,7 +49,7 @@ impl ResaWindow {
             .build(&self.event_loop).unwrap());
 
         if os == "Darwin"{
-            println!("Init metal rs here!")
+            self.renderer = NullTrait::Instance(Box::new(MetalRenderer::init()));
         }
         else {
             self.renderer = NullTrait::Instance(Box::new(VkRenderer::init()));
