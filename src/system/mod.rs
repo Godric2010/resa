@@ -7,4 +7,3 @@ mod window;
 mod file;
 mod ini;
 mod rendering;
-mod mesh;

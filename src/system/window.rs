@@ -1,15 +1,17 @@
 use crate::system::ini::{WindowIniData, WindowMode};
 use winit::{event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::{WindowBuilder, Window}};
 use winit::dpi::{LogicalSize};
-use crate::system::rendering::renderer::{RendererLoop};
-use crate::system::rendering::vulkan::render_loop::VkRendererLoop;
+use crate::system::rendering::IRenderer;
+use crate::system::rendering::mesh::mesh::Mesh;
+use crate::system::rendering::mesh::vertex::Vertex;
+use crate::system::rendering::vulkan::renderer::VkRenderer;
 
 pub struct ResaWindow {
     width: u32,
     height: u32,
     title: String,
     mode: WindowMode,
-    renderer_loop: Option<Box<dyn RendererLoop>>,
+    renderer_loop: Option<Box<dyn IRenderer>>,
     window: Option<Window>,
     event_loop: EventLoop<()>,
     os: &'static str,
@@ -48,15 +50,17 @@ impl ResaWindow {
             .with_transparent(false)
             .build(&self.event_loop).unwrap());
 
-        if self.os == "Darwin" {
-            println!("Init metal rs here!");
-        } else {
-            self.renderer_loop = Some(Box::new(VkRendererLoop::init(&self.window.as_ref().unwrap())))
-        }
+        // if self.os == "Darwin" {
+        //     println!("Init metal rs here!");
+        // } else {
+        self.renderer_loop = Some(Box::new(VkRenderer::new(&self.window.as_ref().unwrap())))
+        // }
     }
 
     pub fn run_window_loop(self) {
         let win = self.window.unwrap();
+        let mut renderer = self.renderer_loop.unwrap();
+
 
         self.event_loop.run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Poll;
@@ -65,7 +69,8 @@ impl ResaWindow {
                 Event::WindowEvent {
                     event: WindowEvent::CloseRequested, ..
                 } => {
-                    *control_flow = ControlFlow::Exit
+                    *control_flow = ControlFlow::Exit;
+                    renderer.dispose();
                 }
                 Event::MainEventsCleared => {
                     win.request_redraw();
@@ -73,7 +78,11 @@ impl ResaWindow {
                 Event::RedrawRequested(_) => {}
                 _ => ()
             }
-        });
-    }
 
+            let meshes = [Mesh{ vertices: Box::new([]), indices: Box::new([]), faces: Box::new([]) }];
+            renderer.render(&meshes);
+        });
+
+
+    }
 }
