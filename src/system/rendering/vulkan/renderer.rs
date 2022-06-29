@@ -10,7 +10,7 @@ pub struct VkRenderer {
 impl IRenderer for VkRenderer {
     fn new(window: &Window) -> Self where Self: Sized {
         println!("Create new vulkan renderer!");
-        let instance = VkInstance::new(window).expect("Creation of instance failed!");
+        let instance = VkInstance::new(window, None).expect("Creation of instance failed!");
         VkRenderer {
             instance
         }

@@ -5,35 +5,51 @@ use std::ops::Index;
 use std::os::raw::c_char;
 use ash::{Entry, Instance};
 use ash::extensions::ext::DebugUtils;
-use ash::vk::{API_VERSION_1_3, ApplicationInfo, ExtensionProperties, InstanceCreateInfo, make_api_version, PhysicalDevice, PhysicalDeviceFeatures, QueueFamilyProperties, QueueFlags};
+use ash::vk::{API_VERSION_1_3, ApplicationInfo, ExtensionProperties, InstanceCreateInfo, make_api_version, PhysicalDevice, PhysicalDeviceFeatures, PhysicalDeviceType, QueueFamilyProperties, QueueFlags};
 use ash_window::enumerate_required_extensions;
-use winit::platform::unix::x11::ffi::False;
 use winit::window::Window;
 
 pub struct VkInstance {
     instance: Instance,
+    physical_devices: Vec<VkPhysicalDevice>,
+    selected_physical_device: VkPhysicalDevice,
 }
 
+#[derive(Clone)]
 struct VkPhysicalDevice {
     physical_device: PhysicalDevice,
+    name: String,
+    device_type: PhysicalDeviceType,
     extensions: Vec<ExtensionProperties>,
     features: PhysicalDeviceFeatures,
     queue_family_index: u32,
 }
 
 impl VkInstance {
-    pub fn new(window: &Window) -> Result<Self, Error> {
+    pub fn new(window: &Window, gpu_name: Option<String>) -> Result<Self, Error> {
         println!("Create VK instance");
         let entry = VkInstance::create_entry();
         let instance = VkInstance::create_instance(&entry, window);
 
-        let physical_device = VkInstance::find_best_physical_device(&instance);
-        if physical_device.is_err() {
+        let physical_devices_result = VkInstance::get_physical_devices(&instance);
+        if physical_devices_result.is_err() {
             Err("Creation of vk instance failed!").unwrap()
         }
+        let physical_devices = physical_devices_result.unwrap();
+
+        let selected: &VkPhysicalDevice = match gpu_name {
+            Some(name) => {VkInstance::select_physical_device_by_name(&physical_devices, name)},
+            None => {VkInstance::select_physical_device(&physical_devices)},
+        };
+
+        let selected_physical_device = selected.clone();
+
+        println!("{}", selected_physical_device.name);
 
         Ok(VkInstance {
-            instance
+            instance,
+            physical_devices,
+            selected_physical_device
         })
     }
 
@@ -74,26 +90,29 @@ impl VkInstance {
         instance
     }
 
-    fn find_best_physical_device(instance: &Instance) -> Result<PhysicalDevice, Error> {
+    fn get_physical_devices(instance: &Instance) -> Result<Vec<VkPhysicalDevice>, Error> {
         let physical_devices = unsafe { instance.enumerate_physical_devices().expect("Failed to load physical devices!") };
         if physical_devices.iter().count() == 0 {
             Error::default();
         }
         let mut vk_physical_devices: Vec<VkPhysicalDevice> = Vec::new();
         unsafe {
-            for physical_device in physical_devices.iter() {
-                let pd = physical_device.clone();
+            for p_device in physical_devices.iter() {
+                let physical_device = p_device.clone();
 
-                let device_properties = instance.get_physical_device_properties(pd);
-                // device_properties.
+                let device_properties = instance.get_physical_device_properties(physical_device);
+                let name = CStr::from_ptr(device_properties.device_name.as_ptr()).to_str().unwrap().to_owned();
+                let device_type = device_properties.device_type;
+                let extensions = instance.enumerate_device_extension_properties(physical_device).expect("Could not enumerate physical device extensions...");
+                let features = instance.get_physical_device_features(physical_device);
 
-                let extensions = instance.enumerate_device_extension_properties(pd).expect("Could not enumerate physical device extensions...");
-                let features = instance.get_physical_device_features(pd);
-                let queue_family_properties = instance.get_physical_device_queue_family_properties(pd);
+                let queue_family_properties = instance.get_physical_device_queue_family_properties(physical_device);
                 let queue_family_index: u32 = VkInstance::find_best_queue_family_index(queue_family_properties).unwrap();
                 vk_physical_devices.push(
                     VkPhysicalDevice {
-                        physical_device: pd,
+                        physical_device,
+                        name,
+                        device_type,
                         extensions,
                         features,
                         queue_family_index,
@@ -101,14 +120,14 @@ impl VkInstance {
             }
         };
 
-        for device in vk_physical_devices.iter(){
-           instance.get_physical_device_properties(*device)
-        }
+        // for device in vk_physical_devices.iter(){
+        //    instance.get_physical_device_properties(*device)
+        // }
 
         println!("Physical devices found: {}", physical_devices.len());
 
 
-        Ok(physical_devices[0])
+        Ok(vk_physical_devices)
     }
 
     fn find_best_queue_family_index(queue_families: Vec<QueueFamilyProperties>) -> Result<u32, Error> {
@@ -137,5 +156,23 @@ impl VkInstance {
         } else {
             Err(Error::default())
         }
+    }
+
+    fn select_physical_device_by_name(physical_devices: &Vec<VkPhysicalDevice>, gpu_name: String) -> &VkPhysicalDevice{
+        for physical_device in physical_devices.iter() {
+            if physical_device.name == gpu_name{
+                return physical_device;
+            }
+        }
+        VkInstance::select_physical_device(physical_devices)
+    }
+
+    fn select_physical_device(physical_devices: &Vec<VkPhysicalDevice>) -> &VkPhysicalDevice{
+        for physical_device in physical_devices.iter() {
+            if physical_device.device_type == PhysicalDeviceType::DISCRETE_GPU{
+                return physical_device;
+            }
+        }
+        &physical_devices[0]
     }
 }
