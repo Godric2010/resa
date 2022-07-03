@@ -1,11 +1,10 @@
 use std::ffi::CStr;
-use std::fmt;
 use std::fmt::Error;
-use std::ops::Index;
 use std::os::raw::c_char;
-use ash::{Entry, Instance};
+use ash::{Entry, Instance, Device};
 use ash::extensions::ext::DebugUtils;
-use ash::vk::{API_VERSION_1_3, ApplicationInfo, ExtensionProperties, InstanceCreateInfo, make_api_version, PhysicalDevice, PhysicalDeviceFeatures, PhysicalDeviceType, QueueFamilyProperties, QueueFlags};
+use ash::extensions::khr::Swapchain;
+use ash::vk::{API_VERSION_1_3, ApplicationInfo, DeviceCreateInfo, DeviceQueueCreateInfo, ExtensionProperties, InstanceCreateInfo, KhrPortabilitySubsetFn, make_api_version, PhysicalDevice, PhysicalDeviceFeatures, PhysicalDeviceType, QueueFamilyProperties, QueueFlags};
 use ash_window::enumerate_required_extensions;
 use winit::window::Window;
 
@@ -13,6 +12,7 @@ pub struct VkInstance {
     instance: Instance,
     physical_devices: Vec<VkPhysicalDevice>,
     selected_physical_device: VkPhysicalDevice,
+    logical_device: Device,
 }
 
 #[derive(Clone)]
@@ -38,23 +38,38 @@ impl VkInstance {
         let physical_devices = physical_devices_result.unwrap();
 
         let selected: &VkPhysicalDevice = match gpu_name {
-            Some(name) => {VkInstance::select_physical_device_by_name(&physical_devices, name)},
-            None => {VkInstance::select_physical_device(&physical_devices)},
+            Some(name) => { VkInstance::select_physical_device_by_name(&physical_devices, name) }
+            None => { VkInstance::select_physical_device(&physical_devices) }
         };
 
         let selected_physical_device = selected.clone();
-
         println!("{}", selected_physical_device.name);
+
+        let features = PhysicalDeviceFeatures {
+            shader_clip_distance: 1,
+            ..Default::default()
+        };
+
+        let extension_names = [Swapchain::name().as_ptr(), KhrPortabilitySubsetFn::name().as_ptr() ];
+        let logical_device = VkInstance::create_device(&instance,
+                                                       &selected_physical_device,
+                                                       &features,
+                                                       &extension_names,
+        );
 
         Ok(VkInstance {
             instance,
             physical_devices,
-            selected_physical_device
+            selected_physical_device,
+            logical_device,
         })
     }
 
     pub fn destroy(&self) {
         println!("Destroy vk instance");
+        unsafe {
+            self.logical_device.destroy_device(None);
+        }
     }
 
     fn create_entry() -> Entry {
@@ -119,11 +134,6 @@ impl VkInstance {
                     });
             }
         };
-
-        // for device in vk_physical_devices.iter(){
-        //    instance.get_physical_device_properties(*device)
-        // }
-
         println!("Physical devices found: {}", physical_devices.len());
 
 
@@ -158,21 +168,43 @@ impl VkInstance {
         }
     }
 
-    fn select_physical_device_by_name(physical_devices: &Vec<VkPhysicalDevice>, gpu_name: String) -> &VkPhysicalDevice{
+    fn select_physical_device_by_name(physical_devices: &Vec<VkPhysicalDevice>, gpu_name: String) -> &VkPhysicalDevice {
         for physical_device in physical_devices.iter() {
-            if physical_device.name == gpu_name{
+            if physical_device.name == gpu_name {
                 return physical_device;
             }
         }
         VkInstance::select_physical_device(physical_devices)
     }
 
-    fn select_physical_device(physical_devices: &Vec<VkPhysicalDevice>) -> &VkPhysicalDevice{
+    fn select_physical_device(physical_devices: &Vec<VkPhysicalDevice>) -> &VkPhysicalDevice {
         for physical_device in physical_devices.iter() {
-            if physical_device.device_type == PhysicalDeviceType::DISCRETE_GPU{
+            if physical_device.device_type == PhysicalDeviceType::DISCRETE_GPU {
                 return physical_device;
             }
         }
         &physical_devices[0]
+    }
+
+    fn create_device(instance: &Instance, vk_physical_device: &VkPhysicalDevice,
+                     requested_features: &PhysicalDeviceFeatures,
+                     requested_extensions: &[*const c_char; 2]) -> Device {
+        let priorities = [1.0];
+        let queue_info = DeviceQueueCreateInfo::builder()
+            .queue_family_index(vk_physical_device.queue_family_index)
+            .queue_priorities(&priorities);
+
+        let create_info = DeviceCreateInfo::builder()
+            .queue_create_infos(std::slice::from_ref(&queue_info))
+            .enabled_features(requested_features)
+            .enabled_extension_names(requested_extensions);
+
+        let logical_device: Device = unsafe {
+            instance.create_device(vk_physical_device.physical_device,
+                                   &create_info,
+                                   None).unwrap()
+        };
+
+        logical_device
     }
 }
