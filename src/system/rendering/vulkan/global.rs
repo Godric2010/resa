@@ -3,12 +3,15 @@ use std::fmt::Error;
 use std::os::raw::c_char;
 use ash::{Entry, Instance, Device};
 use ash::extensions::ext::DebugUtils;
-use ash::vk::{API_VERSION_1_3, ApplicationInfo, DeviceCreateInfo, DeviceQueueCreateInfo, ExtensionProperties, InstanceCreateInfo, make_api_version, PhysicalDevice, PhysicalDeviceFeatures, PhysicalDeviceType, Queue, QueueFamilyProperties, QueueFlags, TRUE};
-use ash_window::enumerate_required_extensions;
+use ash::extensions::khr::Surface;
+use ash::vk::{API_VERSION_1_3, ApplicationInfo, DeviceCreateInfo, DeviceQueueCreateInfo, ExtensionProperties, InstanceCreateInfo, make_api_version, PhysicalDevice, PhysicalDeviceFeatures, PhysicalDeviceType, Queue, QueueFamilyProperties, QueueFlags, SurfaceKHR, TRUE};
+use ash_window::{create_surface, enumerate_required_extensions};
 use winit::window::Window;
 
 pub struct VkInstance {
     instance: Instance,
+    pub surface_handle: SurfaceKHR,
+    pub surface: Surface,
     pub physical_devices: Vec<VkPhysicalDevice>,
     pub selected_physical_device: VkPhysicalDevice,
 }
@@ -29,8 +32,11 @@ impl VkInstance {
         println!("Create VK instance");
         let entry = VkInstance::create_entry();
         let instance = VkInstance::create_instance(&entry, window);
+        let surface_handle = unsafe { create_surface(&entry, &instance, window, None) }.unwrap();
+        let surface = Surface::new(&entry, &instance);
 
-        let physical_devices_result = VkInstance::get_physical_devices(&instance);
+
+        let physical_devices_result = VkInstance::get_physical_devices(&instance, &surface, surface_handle);
         if physical_devices_result.is_err() {
             Err("Creation of vk instance failed!").unwrap()
         }
@@ -47,6 +53,8 @@ impl VkInstance {
 
         Ok(VkInstance {
             instance,
+            surface_handle,
+            surface,
             physical_devices,
             selected_physical_device,
         })
@@ -54,7 +62,10 @@ impl VkInstance {
 
     pub fn destroy(&self) {
         println!("Destroy vk instance");
-        unsafe { self.instance.destroy_instance(None) };
+        unsafe {
+            self.surface.destroy_surface(self.surface_handle, None);
+            self.instance.destroy_instance(None)
+        };
     }
 
     fn create_entry() -> Entry {
@@ -90,7 +101,7 @@ impl VkInstance {
         instance
     }
 
-    fn get_physical_devices(instance: &Instance) -> Result<Vec<VkPhysicalDevice>, Error> {
+    fn get_physical_devices(instance: &Instance, presentation_surface: &Surface, surface_handle: SurfaceKHR) -> Result<Vec<VkPhysicalDevice>, Error> {
         let physical_devices = unsafe { instance.enumerate_physical_devices().expect("Failed to load physical devices!") };
         if physical_devices.iter().count() == 0 {
             Error::default();
@@ -107,8 +118,8 @@ impl VkInstance {
                 let features = instance.get_physical_device_features(physical_device);
 
                 let queue_family_properties = instance.get_physical_device_queue_family_properties(physical_device);
-                let graphics_queue_family_index: u32 = VkInstance::find_best_queue_family_index(&queue_family_properties, QueueFlags::GRAPHICS).unwrap();
-                let compute_queue_family_index = VkInstance::find_best_queue_family_index(&queue_family_properties, QueueFlags::COMPUTE).unwrap();
+                let graphics_queue_family_index: u32 = VkInstance::find_best_graphics_queue_index(&physical_device, presentation_surface, surface_handle, &queue_family_properties).unwrap();
+                let compute_queue_family_index = VkInstance::find_best_compute_queue_index(&queue_family_properties).unwrap();
 
                 vk_physical_devices.push(
                     VkPhysicalDevice {
@@ -128,9 +139,17 @@ impl VkInstance {
         Ok(vk_physical_devices)
     }
 
-    fn find_best_queue_family_index(queue_families: &Vec<QueueFamilyProperties>, requested_flags: QueueFlags) -> Result<u32, Error> {
-        for (i, queue_family) in queue_families.iter().enumerate() {
-            if !queue_family.queue_flags.contains(requested_flags) {
+    fn find_best_graphics_queue_index(physical_device: &PhysicalDevice, presentation_surface: &Surface, surface_handle: SurfaceKHR, queue_family_properties: &Vec<QueueFamilyProperties>) -> Result<u32, Error> {
+        for (i, queue_family) in queue_family_properties.iter().enumerate() {
+            let is_graphics_queue = queue_family.queue_flags.contains(QueueFlags::GRAPHICS);
+            let presentation_surface_supported = unsafe {
+                presentation_surface.get_physical_device_surface_support(
+                    physical_device.clone(),
+                    i as u32, 
+                    surface_handle).unwrap()
+            };
+
+            if !is_graphics_queue || !presentation_surface_supported {
                 continue;
             }
             return Ok(i as u32);
@@ -138,6 +157,18 @@ impl VkInstance {
 
         Err(Error::default())
     }
+
+    fn find_best_compute_queue_index(queue_family_properties: &Vec<QueueFamilyProperties>) -> Result<u32, Error> {
+        for (i, queue_family) in queue_family_properties.iter().enumerate() {
+            if !queue_family.queue_flags.contains(QueueFlags::COMPUTE) {
+                continue;
+            }
+            return Ok(i as u32);
+        }
+
+        Err(Error::default())
+    }
+
 
     fn select_physical_device_by_name(physical_devices: &Vec<VkPhysicalDevice>, gpu_name: String) -> &VkPhysicalDevice {
         for physical_device in physical_devices.iter() {
