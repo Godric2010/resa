@@ -15,7 +15,9 @@ impl VkLogicalDevice{
             shader_clip_distance: 1,
             ..Default::default()
         };
-        let extension_names = [Swapchain::name().as_ptr(), KhrPortabilitySubsetFn::name().as_ptr()];
+        let mut extension_names = Vec::new();
+        extension_names.push(Swapchain::name().as_ptr());
+        extension_names.push(KhrPortabilitySubsetFn::name().as_ptr());
         let device = instance.create_device(&features, &extension_names);
         let graphics_queue_index = instance.selected_physical_device.graphics_queue_family_index.clone();
         let compute_queue_index = instance.selected_physical_device.compute_queue_family_index.clone();

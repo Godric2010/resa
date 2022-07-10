@@ -145,7 +145,7 @@ impl VkInstance {
             let presentation_surface_supported = unsafe {
                 presentation_surface.get_physical_device_surface_support(
                     physical_device.clone(),
-                    i as u32, 
+                    i as u32,
                     surface_handle).unwrap()
             };
 
@@ -182,11 +182,9 @@ impl VkInstance {
     fn select_physical_device(physical_devices: &Vec<VkPhysicalDevice>) -> &VkPhysicalDevice {
         for physical_device in physical_devices.iter() {
             let features = physical_device.features;
-            println!("Geomerty shader: {}", features.geometry_shader);
-            let has_requested_features = true;// features.geometry_shader == TRUE;
+            let has_requested_features = true;// features.geometry_shader == TRUE; // Todo: find a fix for that!
 
             if physical_device.device_type == PhysicalDeviceType::DISCRETE_GPU && has_requested_features {
-                println!("Discrede gpu with all features: {}", physical_device.name);
                 return physical_device;
             }
         }
@@ -195,7 +193,7 @@ impl VkInstance {
 
     pub fn create_device(&self,
                          requested_features: &PhysicalDeviceFeatures,
-                         requested_extensions: &[*const c_char; 2]) -> Device {
+                         requested_extensions: &Vec<*const c_char>/*[*const c_char; 2]*/) -> Device {
         let priorities = [1.0];
         let graphics_queue_info = [DeviceQueueCreateInfo::builder()
             .queue_family_index(self.selected_physical_device.graphics_queue_family_index)
