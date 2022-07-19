@@ -7,9 +7,10 @@ use ash::extensions::khr::Surface;
 use ash::vk::{API_VERSION_1_3, ApplicationInfo, DeviceCreateInfo, DeviceQueueCreateInfo, ExtensionProperties, InstanceCreateInfo, make_api_version, PhysicalDevice, PhysicalDeviceFeatures, PhysicalDeviceType, Queue, QueueFamilyProperties, QueueFlags, SurfaceKHR, TRUE};
 use ash_window::{create_surface, enumerate_required_extensions};
 use winit::window::Window;
+use crate::system::log::Log;
 
 pub struct VkInstance {
-    instance: Instance,
+    pub instance: Instance,
     pub surface_handle: SurfaceKHR,
     pub surface: Surface,
     pub physical_devices: Vec<VkPhysicalDevice>,
@@ -29,7 +30,6 @@ pub struct VkPhysicalDevice {
 
 impl VkInstance {
     pub fn new(window: &Window, gpu_name: Option<String>) -> Result<Self, Error> {
-        println!("Create VK instance");
         let entry = VkInstance::create_entry();
         let instance = VkInstance::create_instance(&entry, window);
         let surface_handle = unsafe { create_surface(&entry, &instance, window, None) }.unwrap();
@@ -48,8 +48,6 @@ impl VkInstance {
         };
 
         let selected_physical_device = selected.clone();
-        println!("{}", selected_physical_device.name);
-
 
         Ok(VkInstance {
             instance,
@@ -61,7 +59,6 @@ impl VkInstance {
     }
 
     pub fn destroy(&self) {
-        println!("Destroy vk instance");
         unsafe {
             self.surface.destroy_surface(self.surface_handle, None);
             self.instance.destroy_instance(None)
@@ -133,9 +130,6 @@ impl VkInstance {
                     });
             }
         };
-        println!("Physical devices found: {}", physical_devices.len());
-
-
         Ok(vk_physical_devices)
     }
 

@@ -1,3 +1,4 @@
+use num_format::Locale::se;
 use crate::system::ini::{WindowIniData, WindowMode};
 use winit::{event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::{WindowBuilder, Window}};
 use winit::dpi::{LogicalSize};
@@ -7,59 +8,65 @@ use crate::system::rendering::mesh::vertex::Vertex;
 use crate::system::rendering::vulkan::renderer::VkRenderer;
 
 pub struct ResaWindow {
-    width: u32,
-    height: u32,
-    title: String,
-    mode: WindowMode,
-    renderer_loop: Option<Box<dyn IRenderer>>,
-    window: Option<Window>,
+    pub width: u32,
+    pub height: u32,
+    pub title: String,
+    pub mode: WindowMode,
+    renderer_loop: Box<dyn IRenderer>,
+    window: Window,
     event_loop: EventLoop<()>,
-    os: &'static str,
+    os: String,
 }
 
 impl ResaWindow {
-    pub fn init(ini_data: &WindowIniData, os_name: &'static str) -> ResaWindow {
+
+    pub fn init(ini_data: &WindowIniData, os_name: &str) -> ResaWindow {
         let event_loop = EventLoop::new();
-        let instance = ResaWindow {
-            width: ini_data.window_width,
-            height: ini_data.window_height,
-            title: ini_data.window_title.to_string(),
-            mode: ini_data.window_mode,
-            renderer_loop: None,
-            window: None,
-            event_loop,
-            os: os_name,
-        };
 
-        instance
-    }
-
-    pub fn create_window(&mut self) {
-        let window_size = LogicalSize::new(self.width, self.height);
-        let window_mode = match self.mode {
+        let window_size = LogicalSize::new(ini_data.window_width, ini_data.window_height);
+        let window_mode = match ini_data.window_mode{
             WindowMode::Windowed => { None }
             WindowMode::Fullscreen => { None }
         };
 
-        self.window = Some(WindowBuilder::new()
-            .with_title(&self.title)
+        let window = WindowBuilder::new()
+            .with_title(&ini_data.window_title)
             .with_inner_size(window_size)
             .with_fullscreen(window_mode)
             .with_resizable(true)
             .with_always_on_top(true)
             .with_transparent(false)
-            .build(&self.event_loop).unwrap());
+            .build(&event_loop).unwrap();
 
         // if self.os == "Darwin" {
         //     println!("Init metal rs here!");
         // } else {
-        self.renderer_loop = Some(Box::new(VkRenderer::new(&self.window.as_ref().unwrap())))
+        let renderer_loop = Box::new(VkRenderer::new(&window));
         // }
+
+
+        let instance = ResaWindow {
+            width: ini_data.window_width,
+            height: ini_data.window_height,
+            title: ini_data.window_title.to_string(),
+            mode: ini_data.window_mode,
+            renderer_loop,
+            window,
+            event_loop,
+            os: os_name.to_string(),
+        };
+
+        instance
+    }
+
+    pub fn get_gpu_name(&self) -> String {
+        let name = self.renderer_loop.get_gpu_name().to_string();
+        name
     }
 
     pub fn run_window_loop(self) {
-        let win = self.window.unwrap();
-        let mut renderer = self.renderer_loop.unwrap();
+        let win = self.window;
+        let mut renderer = self.renderer_loop;
 
 
         self.event_loop.run(move |event, _, control_flow| {
@@ -79,10 +86,8 @@ impl ResaWindow {
                 _ => ()
             }
 
-            let meshes = [Mesh{ vertices: Box::new([]), indices: Box::new([]), faces: Box::new([]) }];
+            let meshes = [Mesh { vertices: Box::new([]), indices: Box::new([]), faces: Box::new([]) }];
             renderer.render(&meshes);
         });
-
-
     }
 }

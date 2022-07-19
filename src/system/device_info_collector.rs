@@ -4,7 +4,7 @@ use num_format::{Buffer, CustomFormat, Grouping};
 use sysinfo::{DiskExt, ProcessorExt, System, SystemExt};
 use crate::system::log::Log;
 
-#[derive(Copy, Clone)]
+#[derive(/*Copy,*/ Clone)]
 pub struct DeviceInfo {
     pub os_name: &'static str,
     pub os_version: &'static str,
@@ -13,7 +13,7 @@ pub struct DeviceInfo {
     cpu_frequency: u64,
     ram_size: u64,
     storage_left: u64,
-    gpu_vendor: &'static str,
+    gpu_vendor: String,
     gpu_ram: u64,
 }
 
@@ -21,7 +21,7 @@ impl DeviceInfo {
     pub fn new() -> DeviceInfo {
         let instance = DeviceInfo {
             storage_left: 0,
-            gpu_vendor: "Not Initialized",
+            gpu_vendor: "Not Initialized".to_string(),
             gpu_ram: 0,
             ram_size: 0,
             cpu_cores: 0,
@@ -43,12 +43,12 @@ impl DeviceInfo {
         self.get_storage_data(&sys);
     }
 
-    pub fn set_gpu_data(&mut self, vendor: &'static str, g_ram: u64) {
-        self.gpu_vendor = vendor;
+    pub fn set_gpu_data(&mut self, vendor: &str, g_ram: u64) {
+        self.gpu_vendor = vendor.to_string();
         self.gpu_ram = g_ram;
     }
 
-    pub fn write_to_log(self) {
+    pub fn write_to_log(&self) {
         let mut log_string = String::new();
         log_string.push_str("\n## System Info\n---\n");
         log_string.push_str(self.os_name);
@@ -69,7 +69,7 @@ impl DeviceInfo {
         log_string.push_str(" (KB)\n");
 
         log_string.push_str("### GPU\n\t");
-        log_string.push_str(self.gpu_vendor);
+        log_string.push_str(self.gpu_vendor.as_str());
         log_string.push_str("\n\tGraphics RAM: ");
         let gpu_ram = self.gpu_ram as usize;
         log_string.push_str(&*DeviceInfo::format_big_num(&gpu_ram));

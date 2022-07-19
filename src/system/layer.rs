@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+use std::ops::Deref;
 use crate::system::device_info_collector::DeviceInfo;
 use crate::system::ini;
 use crate::system::file::Serializable;
@@ -17,13 +19,17 @@ impl System {
         let mut device_info = DeviceInfo::new();
         device_info.collect_data();
 
-        let mut sys = System { device_info, window: ResaWindow::init(&ini_data.window_data, device_info.os_name) };
-        sys.window.create_window();
+        let window = ResaWindow::init(&ini_data.window_data, device_info.os_name);
+        let mut sys = System { device_info, window };
+
+        let gpu_name = sys.window.get_gpu_name().clone();
+        sys.device_info.set_gpu_data(gpu_name.as_str(), 0);
+        sys.device_info.write_to_log();
 
         sys
     }
 
-    fn init_logging(self, output_path: &str) {
+    pub fn init_logging(self, output_path: &str) {
         Log::init(output_path);
         self.device_info.write_to_log();
     }
